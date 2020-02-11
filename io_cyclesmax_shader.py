@@ -35,6 +35,7 @@ from bpy_extras.io_utils import ExportHelper
 
 class NodeType(Enum):
     INVALID = "invalid"
+    INCOMPATIBLE = "incompatible"
     # Shaders
     AMBIENT_OCCLUSION = "ambient_occlusion"
     PRINCIPLED_BSDF = "principled_bsdf"
@@ -174,6 +175,12 @@ def get_type_by_idname_dict():
     output["ShaderNodeOutputMaterial"] = NodeType.MATERIAL_OUTPUT
     return output
 
+def is_node_type_interface_current(node_type):
+    if bpy.app.version < (2, 81, 0):
+        if node_type == NodeType.VORONOI_TEX:
+            return False
+    return True
+
 class MaxTexManager:
     def __init__(self):
         self.slots_by_filename = dict()
@@ -255,7 +262,12 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
     output.position = (floor(location[0]), -1.0 * floor(location[1]))
     output.name = name
     if node.bl_idname in type_by_idname:
-        output.node_type = type_by_idname[node.bl_idname]
+        node_type = type_by_idname[node.bl_idname]
+        if is_node_type_interface_current(node_type):
+            output.node_type = node_type
+        else:
+            output.node_type = NodeType.INCOMPATIBLE
+            return output
     elif node.bl_idname == "ShaderNodeTexImage":
         # Special case here because we convert image textures to max textures
         output.node_type = NodeType.MAX_TEX
@@ -371,6 +383,9 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         copy_sockets["Distortion"] = "distortion"
     elif output.node_type == NodeType.VORONOI_TEX:
         copy_sockets["Scale"] = "scale"
+        copy_sockets["W"] = "w"
+        copy_sockets["Smoothness"] = "smoothness"
+        copy_sockets["Randomness"] = "randomness"
     elif output.node_type == NodeType.WAVE_TEX:
         copy_sockets["Scale"] = "scale"
         copy_sockets["Distortion"] = "distortion"
@@ -521,7 +536,16 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         else:
             output.string_values['type'] = str(node.musgrave_type).lower()
     elif isinstance(node, bpy.types.ShaderNodeTexVoronoi):
-        output.string_values['coloring'] = str(node.coloring).lower()
+        if node.voronoi_dimensions == '1D':
+            output.int_values['dimensions'] = 1
+        elif node.voronoi_dimensions == '2D':
+            output.int_values['dimensions'] = 2
+        elif node.voronoi_dimensions == '3D':
+            output.int_values['dimensions'] = 3
+        elif node.voronoi_dimensions == '4D':
+            output.int_values['dimensions'] = 4
+        output.string_values['metric'] = str(node.distance).lower()
+        output.string_values['feature'] = str(node.feature).lower()
     elif isinstance(node, bpy.types.ShaderNodeTexWave):
         output.string_values['type'] = str(node.wave_type).lower()
         if node.wave_profile == "SIN":
@@ -655,6 +679,7 @@ class SerializedNodeGraph:
     def __init__(self):
         self.graph_string = ""
         self.unsupported_types = set()
+        self.incompatible_types = set()
 
 def serialize_node_graph(node_tree):
     output = SerializedNodeGraph()
@@ -671,7 +696,9 @@ def serialize_node_graph(node_tree):
         next_node_index += 1
         internal_name = "node" + str(next_node_index)
         converted_node = get_cycles_node(type_by_idname, internal_name, this_node, max_tex_manager)
-        if converted_node.node_type != NodeType.INVALID:
+        if converted_node.node_type == NodeType.INCOMPATIBLE:
+            output.incompatible_types.add(this_node.bl_idname)
+        elif converted_node.node_type != NodeType.INVALID:
             node_names_by_bname[this_node.name] = internal_name
             nodes_by_name[internal_name] = converted_node
         else:
@@ -734,6 +761,8 @@ class ExportCyclesMaxShader(bpy.types.Operator, ExportHelper):
             serialized_graph = serialize_node_graph(this_node_tree)
             if len(serialized_graph.unsupported_types) > 0:
                 self.report({'WARNING'}, "Ignored unsupported node types: " + ", ".join(serialized_graph.unsupported_types))
+            if len(serialized_graph.incompatible_types) > 0:
+                self.report({'WARNING'}, "Ignored incompatible node types: " + ", ".join(serialized_graph.incompatible_types) + ". Load this .blend file in Blender 2.81 or newer to correct this.")
             output_file = open(self.filepath, "w")
             output_file.write(serialized_graph.graph_string)
             break
