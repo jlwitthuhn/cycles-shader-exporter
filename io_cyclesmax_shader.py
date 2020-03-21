@@ -457,6 +457,8 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         copy_sockets["Value"] = "value1"
         copy_sockets["Value_001"] = "value2"
         copy_sockets["Value.001"] = "value2"
+        copy_sockets["Value_002"] = "value3"
+        copy_sockets["Value.002"] = "value3"
     elif output.node_type == NodeType.RGB_TO_BW:
         copy_sockets["Color"] = "color"
     elif output.node_type == NodeType.SEPARATE_HSV:
@@ -665,6 +667,10 @@ def get_cycles_connection(names_by_bname, link):
             output.connection.dest_socket = "Value2"
         elif link.to_socket.identifier == "Value.001":
             output.connection.dest_socket = "Value2"
+        elif link.to_socket.identifier == "Value_002":
+            output.connection.dest_socket = "Value3"
+        elif link.to_socket.identifier == "Value.002":
+            output.connection.dest_socket = "Value3"
     elif dest_node.bl_idname == "ShaderNodeVectorMath":
         if link.to_socket.identifier == "Vector":
             output.connection.dest_socket = "Vector1"
