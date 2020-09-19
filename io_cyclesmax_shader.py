@@ -20,7 +20,7 @@ bl_info = {
     "name": "Export for Cycles for Max shader (.shader)",
     "author": "Jeff Witthuhn",
     "version": (0, 2, 1),
-    "blender": (2, 80, 0),
+    "blender": (2, 83, 0),
     "location": "File > Export > Cycles for Max Shader (.shader)",
     "description": "Export Cycles shaders in a format compatible with Cycles for Max",
     "category": "Import-Export",
@@ -36,7 +36,16 @@ from bpy_extras.io_utils import ExportHelper
 class NodeType(Enum):
     INVALID = "invalid"
     INCOMPATIBLE = "incompatible"
-    # Shaders
+    # Color
+    BRIGHT_CONTRAST = "bright_contrast"
+    GAMMA = "gamma"
+    HSV = "hsv"
+    INVERT = "invert"
+    LIGHT_FALLOFF = "light_falloff"
+    MIX_RGB = "mix_rgb"
+    RGB_CURVES = "rgb_curves"
+    
+    # Shader
     AMBIENT_OCCLUSION = "ambient_occlusion"
     PRINCIPLED_BSDF = "principled_bsdf"
     MIX_SHADER = "mix_shader"
@@ -79,14 +88,6 @@ class NodeType(Enum):
     RGB = "rgb"
     VALUE = "value"
     WIREFRAME = "wireframe"
-    # Color
-    MIX_RGB = "mix_rgb"
-    INVERT = "invert"
-    LIGHT_FALLOFF = "light_falloff"
-    HSV = "hsv"
-    GAMMA = "gamma"
-    BRIGHT_CONTRAST = "bright_contrast"
-    RGB_CURVES = "rgb_curves"
     # Vector
     BUMP = "bump"
     DISPLACEMENT = "displacement"
@@ -105,11 +106,20 @@ class NodeType(Enum):
     SEPARATE_XYZ = "separate_xyz"
     VECTOR_MATH = "vector_math"
     WAVELENGTH = "wavelength"
-    # Outputs
+    # Output
     MATERIAL_OUTPUT = "out_material"
 
 def get_type_by_idname_dict():
     output = dict()
+    # Color
+    output["ShaderNodeBrightContrast"] = NodeType.BRIGHT_CONTRAST
+    output["ShaderNodeGamma"] = NodeType.GAMMA
+    output["ShaderNodeHueSaturation"] = NodeType.HSV
+    output["ShaderNodeInvert"] = NodeType.INVERT
+    output["ShaderNodeLightFalloff"] = NodeType.LIGHT_FALLOFF
+    output["ShaderNodeMixRGB"] = NodeType.MIX_RGB
+    output["ShaderNodeRGBCurve"] = NodeType.RGB_CURVES
+
     output["ShaderNodeAmbientOcclusion"] = NodeType.AMBIENT_OCCLUSION
     output["ShaderNodeBsdfPrincipled"] = NodeType.PRINCIPLED_BSDF
     output["ShaderNodeMixShader"] = NodeType.MIX_SHADER
@@ -149,13 +159,6 @@ def get_type_by_idname_dict():
     output["ShaderNodeRGB"] = NodeType.RGB
     output["ShaderNodeValue"] = NodeType.VALUE
     output["ShaderNodeWireframe"] = NodeType.WIREFRAME
-    output["ShaderNodeMixRGB"] = NodeType.MIX_RGB
-    output["ShaderNodeInvert"] = NodeType.INVERT
-    output["ShaderNodeLightFalloff"] = NodeType.LIGHT_FALLOFF
-    output["ShaderNodeHueSaturation"] = NodeType.HSV
-    output["ShaderNodeGamma"] = NodeType.GAMMA
-    output["ShaderNodeBrightContrast"] = NodeType.BRIGHT_CONTRAST
-    output["ShaderNodeRGBCurve"] = NodeType.RGB_CURVES
     output["ShaderNodeBump"] = NodeType.BUMP
     output["ShaderNodeDisplacement"] = NodeType.DISPLACEMENT
     output["ShaderNodeNormalMap"] = NodeType.NORMAL_MAP
@@ -281,7 +284,35 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
 
     # Determine which sockets to copy based on node type
     copy_sockets = dict()
-    if output.node_type == NodeType.AMBIENT_OCCLUSION:
+    # Color
+    if output.node_type == NodeType.BRIGHT_CONTRAST:
+        copy_sockets["Color"] = "color"
+        copy_sockets["Bright"] = "bright"
+        copy_sockets["Contrast"] = "contrast"
+    elif output.node_type == NodeType.GAMMA:
+        copy_sockets["Color"] = "color"
+        copy_sockets["Gamma"] = "gamma"
+    elif output.node_type == NodeType.HSV:
+        copy_sockets["Hue"] = "hue"
+        copy_sockets["Saturation"] = "saturation"
+        copy_sockets["Value"] = "value"
+        copy_sockets["Fac"] = "fac"
+        copy_sockets["Color"] = "color"
+    elif output.node_type == NodeType.INVERT:
+        copy_sockets["Fac"] = "fac"
+        copy_sockets["Color"] = "color"
+    elif output.node_type == NodeType.LIGHT_FALLOFF:
+        copy_sockets["Strength"] = "strength"
+        copy_sockets["Smooth"] = "smooth"
+    elif output.node_type == NodeType.MIX_RGB:
+        copy_sockets["Fac"] = "fac"
+        copy_sockets["Color1"] = "color1"
+        copy_sockets["Color2"] = "color2"
+    elif output.node_type == NodeType.RGB_CURVES:
+        copy_sockets["Fac"] = "fac"
+        copy_sockets["Color"] = "color"
+
+    elif output.node_type == NodeType.AMBIENT_OCCLUSION:
         copy_sockets["Color"] = "color"
         copy_sockets["Distance"] = "distance"
     elif output.node_type == NodeType.MIX_SHADER:
@@ -399,32 +430,6 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         copy_sockets["Blend"] = "blend"
     elif output.node_type == NodeType.WIREFRAME:
         copy_sockets["Size"] = "size"
-    elif output.node_type == NodeType.MIX_RGB:
-        copy_sockets["Fac"] = "fac"
-        copy_sockets["Color1"] = "color1"
-        copy_sockets["Color2"] = "color2"
-    elif output.node_type == NodeType.INVERT:
-        copy_sockets["Fac"] = "fac"
-        copy_sockets["Color"] = "color"
-    elif output.node_type == NodeType.LIGHT_FALLOFF:
-        copy_sockets["Strength"] = "strength"
-        copy_sockets["Smooth"] = "smooth"
-    elif output.node_type == NodeType.HSV:
-        copy_sockets["Hue"] = "hue"
-        copy_sockets["Saturation"] = "saturation"
-        copy_sockets["Value"] = "value"
-        copy_sockets["Fac"] = "fac"
-        copy_sockets["Color"] = "color"
-    elif output.node_type == NodeType.GAMMA:
-        copy_sockets["Color"] = "color"
-        copy_sockets["Gamma"] = "gamma"
-    elif output.node_type == NodeType.BRIGHT_CONTRAST:
-        copy_sockets["Color"] = "color"
-        copy_sockets["Bright"] = "bright"
-        copy_sockets["Contrast"] = "contrast"
-    elif output.node_type == NodeType.RGB_CURVES:
-        copy_sockets["Fac"] = "fac"
-        copy_sockets["Color"] = "color"
     elif output.node_type == NodeType.BUMP:
         copy_sockets["Strength"] = "strength"
         copy_sockets["Distance"] = "distance"
@@ -489,8 +494,25 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         else:
             pass
 
-    # Copy any non-standard node inputs like bools and strings
-    if isinstance(node, bpy.types.ShaderNodeAmbientOcclusion):
+    # Copy any non-standard node inputs like enums, bools and strings
+    # Color
+    if isinstance(node, bpy.types.ShaderNodeMixRGB):
+        output.string_values['type'] = str(node.blend_type).lower()
+        if node.use_clamp:
+            output.int_values['use_clamp'] = 1
+        else:
+            output.int_values['use_clamp'] = 0
+    elif isinstance(node, bpy.types.ShaderNodeRGBCurve):
+        if len(node.mapping.curves) == 4:
+            output.string_values['r_curve'] = get_curve_string(node.mapping.curves[0])
+            output.string_values['g_curve'] = get_curve_string(node.mapping.curves[1])
+            output.string_values['b_curve'] = get_curve_string(node.mapping.curves[2])
+            output.string_values['rgb_curve'] = get_curve_string(node.mapping.curves[3])
+        else:
+            # Ignore curves if there aren't exactly 4
+            pass
+
+    elif isinstance(node, bpy.types.ShaderNodeAmbientOcclusion):
         output.int_values["samples"] = node.samples
         if node.inside:
             output.int_values["inside"] = 1
@@ -569,21 +591,6 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
             output.int_values['use_pixel_size'] = 1
         else:
             output.int_values['use_pixel_size'] = 0
-    elif isinstance(node, bpy.types.ShaderNodeMixRGB):
-        output.string_values['type'] = str(node.blend_type).lower()
-        if node.use_clamp:
-            output.int_values['use_clamp'] = 1
-        else:
-            output.int_values['use_clamp'] = 0
-    elif isinstance(node, bpy.types.ShaderNodeRGBCurve):
-        if len(node.mapping.curves) == 4:
-            output.string_values['r_curve'] = get_curve_string(node.mapping.curves[0])
-            output.string_values['g_curve'] = get_curve_string(node.mapping.curves[1])
-            output.string_values['b_curve'] = get_curve_string(node.mapping.curves[2])
-            output.string_values['rgb_curve'] = get_curve_string(node.mapping.curves[3])
-        else:
-            # Ignore curves if there aren't exactly 4
-            pass
     elif isinstance(node, bpy.types.ShaderNodeDisplacement):
         output.string_values['space'] = str(node.space).lower()
     elif isinstance(node, bpy.types.ShaderNodeNormalMap):
@@ -748,8 +755,8 @@ class ExportCyclesMaxShader(bpy.types.Operator, ExportHelper):
             )
 
     def execute(self, context):
-        if context.scene.render.engine != 'CYCLES':
-            self.report({'ERROR'}, "Export is only compatible with Cycles render engine")
+        if context.scene.render.engine != 'CYCLES' and context.scene.render.engine != 'BLENDER_EEVEE':
+            self.report({'ERROR'}, "Shader export is only compatible with Cycles or Eevee.")
             return {'FINISHED'}
 
         found_shader = False
