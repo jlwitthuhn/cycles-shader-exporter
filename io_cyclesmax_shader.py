@@ -234,19 +234,29 @@ def add_node_strings(string_list, cycles_node):
         string_list.append(str(value))
     string_list.append("node_end")
 
-def get_curve_string(curve):
+def get_single_curve_string(curve):
     output_list = list()
-    output_list.append("curve00")
-    output_list.append("cubic_hermite")
-    point_list = list()
     for this_point in curve.points:
         location = this_point.location
         if (location[0] < 0 or location[1] < 0 or location[0] > 1 or location[1] > 1):
             continue
-        point_list.append(str(location[0]))
-        point_list.append(str(location[1]))
-    output_list.append(str(int(len(point_list) / 2)))
-    return ",".join(output_list) + "," + ",".join(point_list)
+        output_list.append(str(location[0]))
+        output_list.append(str(location[1]))
+        if this_point.handle_type == 'VECTOR':
+            output_list.append('l')
+        else:
+            output_list.append('h')
+    return ",".join(output_list)
+
+def get_rgb_curve_string(r_curve, g_curve, b_curve, c_curve):
+    output_list = list()
+    output_list.append("curve_rgb_00")
+    output_list.append("00")
+    output_list.append(get_single_curve_string(c_curve))
+    output_list.append(get_single_curve_string(r_curve))
+    output_list.append(get_single_curve_string(g_curve))
+    output_list.append(get_single_curve_string(b_curve))
+    return "/".join(output_list)
 
 def get_ramp_string(ramp):
     output_list = list()
@@ -504,10 +514,11 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
             output.int_values['use_clamp'] = 0
     elif isinstance(node, bpy.types.ShaderNodeRGBCurve):
         if len(node.mapping.curves) == 4:
-            output.string_values['r_curve'] = get_curve_string(node.mapping.curves[0])
-            output.string_values['g_curve'] = get_curve_string(node.mapping.curves[1])
-            output.string_values['b_curve'] = get_curve_string(node.mapping.curves[2])
-            output.string_values['rgb_curve'] = get_curve_string(node.mapping.curves[3])
+            curve_r = node.mapping.curves[0]
+            curve_g = node.mapping.curves[1]
+            curve_b = node.mapping.curves[2]
+            curve_c = node.mapping.curves[3]
+            output.string_values['curves'] = get_rgb_curve_string(curve_r, curve_g, curve_b, curve_c)
         else:
             # Ignore curves if there aren't exactly 4
             pass
