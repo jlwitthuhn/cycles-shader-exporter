@@ -311,9 +311,22 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         copy_sockets["Fac"] = "fac"
         copy_sockets["Color1"] = "color1"
         copy_sockets["Color2"] = "color2"
+        #
+        output.string_values['type'] = str(node.blend_type).lower()
+        output.int_values['use_clamp'] = int(node.use_clamp)
     elif output.node_type == NodeType.RGB_CURVES:
         copy_sockets["Fac"] = "fac"
         copy_sockets["Color"] = "color"
+        #
+        if len(node.mapping.curves) == 4:
+            curve_r = node.mapping.curves[0]
+            curve_g = node.mapping.curves[1]
+            curve_b = node.mapping.curves[2]
+            curve_c = node.mapping.curves[3]
+            output.string_values['curves'] = get_rgb_curve_string(curve_r, curve_g, curve_b, curve_c)
+        else:
+            # Ignore curves if there aren't exactly 4
+            pass
     # Converter
     elif output.node_type == NodeType.BLACKBODY:
         copy_sockets["Temperature"] = "temperature"
@@ -321,6 +334,8 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         copy_sockets["Value"] = "value"
         copy_sockets["Min"] = "min"
         copy_sockets["Max"] = "max"
+        #
+        output.string_values['type'] = str(node.clamp_type).lower()
     elif output.node_type == NodeType.COLOR_RAMP:
         copy_sockets["Fac"] = "fac"
     elif output.node_type == NodeType.COMBINE_HSV:
@@ -341,6 +356,9 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         copy_sockets["Value.001"] = "value2"
         copy_sockets["Value_002"] = "value3"
         copy_sockets["Value.002"] = "value3"
+        #
+        output.string_values['type'] = str(node.operation).lower()
+        output.int_values['use_clamp'] = int(node.use_clamp)
     elif output.node_type == NodeType.RGB_TO_BW:
         copy_sockets["Color"] = "color"
     elif output.node_type == NodeType.SEPARATE_HSV:
@@ -353,6 +371,8 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         copy_sockets["Vector"] = "vector1"
         copy_sockets["Vector_001"] = "vector2"
         copy_sockets["Vector.001"] = "vector2"
+        #
+        output.string_values['type'] = str(node.operation).lower()
     elif output.node_type == NodeType.WAVELENGTH:
         copy_sockets["Wavelength"] = "wavelength"
     # Unsorted
@@ -502,36 +522,10 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         else:
             pass
 
+    # TODO: Remove this block
     # Copy any non-standard node inputs like enums, bools and strings
-    # Color
-    if isinstance(node, bpy.types.ShaderNodeMixRGB):
-        output.string_values['type'] = str(node.blend_type).lower()
-        if node.use_clamp:
-            output.int_values['use_clamp'] = 1
-        else:
-            output.int_values['use_clamp'] = 0
-    elif isinstance(node, bpy.types.ShaderNodeRGBCurve):
-        if len(node.mapping.curves) == 4:
-            curve_r = node.mapping.curves[0]
-            curve_g = node.mapping.curves[1]
-            curve_b = node.mapping.curves[2]
-            curve_c = node.mapping.curves[3]
-            output.string_values['curves'] = get_rgb_curve_string(curve_r, curve_g, curve_b, curve_c)
-        else:
-            # Ignore curves if there aren't exactly 4
-            pass
-    # Converter
-    elif isinstance(node, bpy.types.ShaderNodeClamp):
-        output.string_values['type'] = str(node.clamp_type).lower()
-    elif isinstance(node, bpy.types.ShaderNodeMath):
-        output.string_values['type'] = str(node.operation).lower()
-        if node.use_clamp:
-            output.int_values['use_clamp'] = 1
-        else:
-            output.int_values['use_clamp'] = 0
-    elif isinstance(node, bpy.types.ShaderNodeVectorMath):
-        output.string_values['type'] = str(node.operation).lower()
-    # Unsorted
+    if False:
+        pass
     elif isinstance(node, bpy.types.ShaderNodeAmbientOcclusion):
         output.int_values["samples"] = node.samples
         if node.inside:
