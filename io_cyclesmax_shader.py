@@ -44,7 +44,21 @@ class NodeType(Enum):
     LIGHT_FALLOFF = "light_falloff"
     MIX_RGB = "mix_rgb"
     RGB_CURVES = "rgb_curves"
-    
+    # Converter
+    BLACKBODY = "blackbody"
+    CLAMP = "clamp"
+    COLOR_RAMP = "color_ramp"
+    COMBINE_HSV = "combine_hsv"
+    COMBINE_RGB = "combine_rgb"
+    COMBINE_XYZ = "combine_xyz"
+    # Untested
+    MATH = "math"
+    RGB_TO_BW = "rgb_to_bw"
+    SEPARATE_HSV = "separate_hsv"
+    SEPARATE_RGB = "separate_rgb"
+    SEPARATE_XYZ = "separate_xyz"
+    VECTOR_MATH = "vector_math"
+    WAVELENGTH = "wavelength"
     # Shader
     AMBIENT_OCCLUSION = "ambient_occlusion"
     PRINCIPLED_BSDF = "principled_bsdf"
@@ -93,19 +107,6 @@ class NodeType(Enum):
     DISPLACEMENT = "displacement"
     NORMAL_MAP = "normal_map"
     VECTOR_TRANSFORM = "vector_transform"
-    # Converter
-    BLACKBODY = "blackbody"
-    COLOR_RAMP = "color_ramp"
-    COMBINE_HSV = "combine_hsv"
-    COMBINE_RGB = "combine_rgb"
-    COMBINE_XYZ = "combine_xyz"
-    MATH = "math"
-    RGB_TO_BW = "rgb_to_bw"
-    SEPARATE_HSV = "separate_hsv"
-    SEPARATE_RGB = "separate_rgb"
-    SEPARATE_XYZ = "separate_xyz"
-    VECTOR_MATH = "vector_math"
-    WAVELENGTH = "wavelength"
     # Output
     MATERIAL_OUTPUT = "out_material"
 
@@ -119,6 +120,20 @@ def get_type_by_idname_dict():
     output["ShaderNodeLightFalloff"] = NodeType.LIGHT_FALLOFF
     output["ShaderNodeMixRGB"] = NodeType.MIX_RGB
     output["ShaderNodeRGBCurve"] = NodeType.RGB_CURVES
+    # Converter
+    output["ShaderNodeBlackbody"] = NodeType.BLACKBODY
+    output["ShaderNodeClamp"] = NodeType.CLAMP
+    output["ShaderNodeValToRGB"] = NodeType.COLOR_RAMP
+    output["ShaderNodeCombineHSV"] = NodeType.COMBINE_HSV
+    output["ShaderNodeCombineRGB"] = NodeType.COMBINE_RGB
+    output["ShaderNodeCombineXYZ"] = NodeType.COMBINE_XYZ
+    output["ShaderNodeMath"] = NodeType.MATH
+    output["ShaderNodeRGBToBW"] = NodeType.RGB_TO_BW
+    output["ShaderNodeSeparateHSV"] = NodeType.SEPARATE_HSV
+    output["ShaderNodeSeparateRGB"] = NodeType.SEPARATE_RGB
+    output["ShaderNodeSeparateXYZ"] = NodeType.SEPARATE_XYZ
+    output["ShaderNodeVectorMath"] = NodeType.VECTOR_MATH
+    output["ShaderNodeWavelength"] = NodeType.WAVELENGTH
 
     output["ShaderNodeAmbientOcclusion"] = NodeType.AMBIENT_OCCLUSION
     output["ShaderNodeBsdfPrincipled"] = NodeType.PRINCIPLED_BSDF
@@ -163,26 +178,8 @@ def get_type_by_idname_dict():
     output["ShaderNodeDisplacement"] = NodeType.DISPLACEMENT
     output["ShaderNodeNormalMap"] = NodeType.NORMAL_MAP
     output["ShaderNodeVectorTransform"] = NodeType.VECTOR_TRANSFORM
-    output["ShaderNodeBlackbody"] = NodeType.BLACKBODY
-    output["ShaderNodeValToRGB"] = NodeType.COLOR_RAMP
-    output["ShaderNodeCombineHSV"] = NodeType.COMBINE_HSV
-    output["ShaderNodeCombineRGB"] = NodeType.COMBINE_RGB
-    output["ShaderNodeCombineXYZ"] = NodeType.COMBINE_XYZ
-    output["ShaderNodeMath"] = NodeType.MATH
-    output["ShaderNodeRGBToBW"] = NodeType.RGB_TO_BW
-    output["ShaderNodeSeparateHSV"] = NodeType.SEPARATE_HSV
-    output["ShaderNodeSeparateRGB"] = NodeType.SEPARATE_RGB
-    output["ShaderNodeSeparateXYZ"] = NodeType.SEPARATE_XYZ
-    output["ShaderNodeVectorMath"] = NodeType.VECTOR_MATH
-    output["ShaderNodeWavelength"] = NodeType.WAVELENGTH
     output["ShaderNodeOutputMaterial"] = NodeType.MATERIAL_OUTPUT
     return output
-
-def is_node_type_interface_current(node_type):
-    if bpy.app.version < (2, 81, 0):
-        if node_type == NodeType.VORONOI_TEX:
-            return False
-    return True
 
 class MaxTexManager:
     def __init__(self):
@@ -275,12 +272,7 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
     output.position = (floor(location[0]), -1.0 * floor(location[1]))
     output.name = name
     if node.bl_idname in type_by_idname:
-        node_type = type_by_idname[node.bl_idname]
-        if is_node_type_interface_current(node_type):
-            output.node_type = node_type
-        else:
-            output.node_type = NodeType.INCOMPATIBLE
-            return output
+        output.node_type = type_by_idname[node.bl_idname]
     elif node.bl_idname == "ShaderNodeTexImage":
         # Special case here because we convert image textures to max textures
         output.node_type = NodeType.MAX_TEX
@@ -290,6 +282,7 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
             output.int_values['slot'] = max_tex_manager.get_slot_from_filename(node.image.filepath)
         return output
     else:
+        output.node_type = NodeType.INVALID
         return output
 
     # Determine which sockets to copy based on node type
@@ -321,7 +314,48 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
     elif output.node_type == NodeType.RGB_CURVES:
         copy_sockets["Fac"] = "fac"
         copy_sockets["Color"] = "color"
-
+    # Converter
+    elif output.node_type == NodeType.BLACKBODY:
+        copy_sockets["Temperature"] = "temperature"
+    elif output.node_type == NodeType.CLAMP:
+        copy_sockets["Value"] = "value"
+        copy_sockets["Min"] = "min"
+        copy_sockets["Max"] = "max"
+    elif output.node_type == NodeType.COLOR_RAMP:
+        copy_sockets["Fac"] = "fac"
+    elif output.node_type == NodeType.COMBINE_HSV:
+        copy_sockets["H"] = "h"
+        copy_sockets["S"] = "s"
+        copy_sockets["V"] = "v"
+    elif output.node_type == NodeType.COMBINE_RGB:
+        copy_sockets["R"] = "r"
+        copy_sockets["G"] = "g"
+        copy_sockets["B"] = "b"
+    elif output.node_type == NodeType.COMBINE_XYZ:
+        copy_sockets["X"] = "x"
+        copy_sockets["Y"] = "y"
+        copy_sockets["Z"] = "z"
+    elif output.node_type == NodeType.MATH:
+        copy_sockets["Value"] = "value1"
+        copy_sockets["Value_001"] = "value2"
+        copy_sockets["Value.001"] = "value2"
+        copy_sockets["Value_002"] = "value3"
+        copy_sockets["Value.002"] = "value3"
+    elif output.node_type == NodeType.RGB_TO_BW:
+        copy_sockets["Color"] = "color"
+    elif output.node_type == NodeType.SEPARATE_HSV:
+        copy_sockets["Color"] = "color"
+    elif output.node_type == NodeType.SEPARATE_RGB:
+        copy_sockets["Image"] = "image"
+    elif output.node_type == NodeType.SEPARATE_XYZ:
+        copy_sockets["Vector"] = "vector"
+    elif output.node_type == NodeType.VECTOR_MATH:
+        copy_sockets["Vector"] = "vector1"
+        copy_sockets["Vector_001"] = "vector2"
+        copy_sockets["Vector.001"] = "vector2"
+    elif output.node_type == NodeType.WAVELENGTH:
+        copy_sockets["Wavelength"] = "wavelength"
+    # Unsorted
     elif output.node_type == NodeType.AMBIENT_OCCLUSION:
         copy_sockets["Color"] = "color"
         copy_sockets["Distance"] = "distance"
@@ -452,42 +486,6 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         copy_sockets["Color"] = "color"
     elif output.node_type == NodeType.VECTOR_TRANSFORM:
         copy_sockets["Vector"] = "vector"
-    elif output.node_type == NodeType.BLACKBODY:
-        copy_sockets["Temperature"] = "temperature"
-    elif output.node_type == NodeType.COLOR_RAMP:
-        copy_sockets["Fac"] = "fac"
-    elif output.node_type == NodeType.COMBINE_HSV:
-        copy_sockets["H"] = "h"
-        copy_sockets["S"] = "s"
-        copy_sockets["V"] = "v"
-    elif output.node_type == NodeType.COMBINE_RGB:
-        copy_sockets["R"] = "r"
-        copy_sockets["G"] = "g"
-        copy_sockets["B"] = "b"
-    elif output.node_type == NodeType.COMBINE_XYZ:
-        copy_sockets["X"] = "x"
-        copy_sockets["Y"] = "y"
-        copy_sockets["Z"] = "z"
-    elif output.node_type == NodeType.MATH:
-        copy_sockets["Value"] = "value1"
-        copy_sockets["Value_001"] = "value2"
-        copy_sockets["Value.001"] = "value2"
-        copy_sockets["Value_002"] = "value3"
-        copy_sockets["Value.002"] = "value3"
-    elif output.node_type == NodeType.RGB_TO_BW:
-        copy_sockets["Color"] = "color"
-    elif output.node_type == NodeType.SEPARATE_HSV:
-        copy_sockets["Color"] = "color"
-    elif output.node_type == NodeType.SEPARATE_RGB:
-        copy_sockets["Image"] = "image"
-    elif output.node_type == NodeType.SEPARATE_XYZ:
-        copy_sockets["Vector"] = "vector"
-    elif output.node_type == NodeType.VECTOR_MATH:
-        copy_sockets["Vector"] = "vector1"
-        copy_sockets["Vector_001"] = "vector2"
-        copy_sockets["Vector.001"] = "vector2"
-    elif output.node_type == NodeType.WAVELENGTH:
-        copy_sockets["Wavelength"] = "wavelength"
 
     # Copy all sockets with identifiers in copy_sockets
     for input_socket in node.inputs:
@@ -522,7 +520,18 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         else:
             # Ignore curves if there aren't exactly 4
             pass
-
+    # Converter
+    elif isinstance(node, bpy.types.ShaderNodeClamp):
+        output.string_values['type'] = str(node.clamp_type).lower()
+    elif isinstance(node, bpy.types.ShaderNodeMath):
+        output.string_values['type'] = str(node.operation).lower()
+        if node.use_clamp:
+            output.int_values['use_clamp'] = 1
+        else:
+            output.int_values['use_clamp'] = 0
+    elif isinstance(node, bpy.types.ShaderNodeVectorMath):
+        output.string_values['type'] = str(node.operation).lower()
+    # Unsorted
     elif isinstance(node, bpy.types.ShaderNodeAmbientOcclusion):
         output.int_values["samples"] = node.samples
         if node.inside:
@@ -617,14 +626,6 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         output.string_values['type'] = str(node.vector_type).lower()
         output.string_values['convert_from'] = str(node.convert_from).lower()
         output.string_values['convert_to'] = str(node.convert_to).lower()
-    elif isinstance(node, bpy.types.ShaderNodeMath):
-        output.string_values['type'] = str(node.operation).lower()
-        if node.use_clamp:
-            output.int_values['use_clamp'] = 1
-        else:
-            output.int_values['use_clamp'] = 0
-    elif isinstance(node, bpy.types.ShaderNodeVectorMath):
-        output.string_values['type'] = str(node.operation).lower()
 
     return output
 
