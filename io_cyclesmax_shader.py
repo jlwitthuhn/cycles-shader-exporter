@@ -51,7 +51,7 @@ class NodeType(Enum):
     COMBINE_HSV = "combine_hsv"
     COMBINE_RGB = "combine_rgb"
     COMBINE_XYZ = "combine_xyz"
-    # Untested
+    MAP_RANGE = "map_range"
     MATH = "math"
     RGB_TO_BW = "rgb_to_bw"
     SEPARATE_HSV = "separate_hsv"
@@ -59,8 +59,8 @@ class NodeType(Enum):
     SEPARATE_XYZ = "separate_xyz"
     VECTOR_MATH = "vector_math"
     WAVELENGTH = "wavelength"
+    # Untested
     # Shader
-    AMBIENT_OCCLUSION = "ambient_occlusion"
     PRINCIPLED_BSDF = "principled_bsdf"
     MIX_SHADER = "mix_shader"
     ADD_SHADER = "add_shader"
@@ -90,6 +90,7 @@ class NodeType(Enum):
     VORONOI_TEX = "voronoi_tex"
     WAVE_TEX = "wave_tex"
     # Input
+    AMBIENT_OCCLUSION = "ambient_occlusion"
     BEVEL = "bevel"
     LIGHT_PATH = "light_path"
     FRESNEL = "fresnel"
@@ -127,6 +128,7 @@ def get_type_by_idname_dict():
     output["ShaderNodeCombineHSV"] = NodeType.COMBINE_HSV
     output["ShaderNodeCombineRGB"] = NodeType.COMBINE_RGB
     output["ShaderNodeCombineXYZ"] = NodeType.COMBINE_XYZ
+    output["ShaderNodeMapRange"] = NodeType.MAP_RANGE
     output["ShaderNodeMath"] = NodeType.MATH
     output["ShaderNodeRGBToBW"] = NodeType.RGB_TO_BW
     output["ShaderNodeSeparateHSV"] = NodeType.SEPARATE_HSV
@@ -338,6 +340,8 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         output.string_values['type'] = str(node.clamp_type).lower()
     elif output.node_type == NodeType.COLOR_RAMP:
         copy_sockets["Fac"] = "fac"
+        #
+        output.string_values['ramp'] = get_ramp_string(node.color_ramp)
     elif output.node_type == NodeType.COMBINE_HSV:
         copy_sockets["H"] = "h"
         copy_sockets["S"] = "s"
@@ -350,6 +354,16 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         copy_sockets["X"] = "x"
         copy_sockets["Y"] = "y"
         copy_sockets["Z"] = "z"
+    elif output.node_type == NodeType.MAP_RANGE:
+        copy_sockets["Value"] = "value"
+        copy_sockets["From Min"] = "from_min"
+        copy_sockets["From Max"] = "from_max"
+        copy_sockets["To Min"] = "to_min"
+        copy_sockets["To Max"] = "to_max"
+        copy_sockets["Steps"] = "steps"
+        #
+        output.string_values['type'] = str(node.interpolation_type).lower()
+        output.int_values["clamp"] = int(node.clamp)
     elif output.node_type == NodeType.MATH:
         copy_sockets["Value"] = "value1"
         copy_sockets["Value_001"] = "value2"
@@ -368,9 +382,12 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
     elif output.node_type == NodeType.SEPARATE_XYZ:
         copy_sockets["Vector"] = "vector"
     elif output.node_type == NodeType.VECTOR_MATH:
+        copy_sockets["Scale"] = "scale"
         copy_sockets["Vector"] = "vector1"
         copy_sockets["Vector_001"] = "vector2"
         copy_sockets["Vector.001"] = "vector2"
+        copy_sockets["Vector_002"] = "vector3"
+        copy_sockets["Vector.002"] = "vector3"
         #
         output.string_values['type'] = str(node.operation).lower()
     elif output.node_type == NodeType.WAVELENGTH:
@@ -510,6 +527,7 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
     # Copy all sockets with identifiers in copy_sockets
     for input_socket in node.inputs:
         if input_socket.identifier not in copy_sockets:
+            print(input_socket.identifier)
             continue
         if input_socket.type == "VALUE":
             output.float_values[copy_sockets[input_socket.identifier]] = input_socket.default_value
@@ -614,8 +632,6 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
             output.string_values['space'] = 'world'
         else:
             output.string_values['space'] = str(node.space).lower()
-    elif isinstance(node, bpy.types.ShaderNodeValToRGB):
-        output.string_values['ramp'] = get_ramp_string(node.color_ramp)
     elif isinstance(node, bpy.types.ShaderNodeVectorTransform):
         output.string_values['type'] = str(node.vector_type).lower()
         output.string_values['convert_from'] = str(node.convert_from).lower()
@@ -691,6 +707,10 @@ def get_cycles_connection(names_by_bname, link):
             output.connection.dest_socket = "Vector2"
         elif link.to_socket.identifier == "Vector.001":
             output.connection.dest_socket = "Vector2"
+        elif link.to_socket.identifier == "Vector_002":
+            output.connection.dest_socket = "Vector3"
+        elif link.to_socket.identifier == "Vector.002":
+            output.connection.dest_socket = "Vector3"
     
     return output
 
