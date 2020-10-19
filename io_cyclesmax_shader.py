@@ -59,8 +59,22 @@ class NodeType(Enum):
     SEPARATE_XYZ = "separate_xyz"
     VECTOR_MATH = "vector_math"
     WAVELENGTH = "wavelength"
-    # Untested
+    # Input
+    AMBIENT_OCCLUSION = "ambient_occlusion"
+    BEVEL = "bevel"
+    CAMERA_DATA = "camera_data"
+    FRESNEL = "fresnel"
+    GEOMETRY = "geometry"
+    LAYER_WEIGHT = "layer_weight"
+    LIGHT_PATH = "light_path"
+    OBJECT_INFO = "object_info"
+    RGB = "rgb"
+    TANGENT = "tangent"
+    TEX_COORD = "texture_coordinate"
+    VALUE = "value"
+    WIREFRAME = "wireframe"
     # Shader
+    # Untested
     PRINCIPLED_BSDF = "principled_bsdf"
     MIX_SHADER = "mix_shader"
     ADD_SHADER = "add_shader"
@@ -89,20 +103,6 @@ class NodeType(Enum):
     NOISE_TEX = "noise_tex"
     VORONOI_TEX = "voronoi_tex"
     WAVE_TEX = "wave_tex"
-    # Input
-    AMBIENT_OCCLUSION = "ambient_occlusion"
-    BEVEL = "bevel"
-    LIGHT_PATH = "light_path"
-    FRESNEL = "fresnel"
-    LAYER_WEIGHT = "layer_weight"
-    CAMERA_DATA = "camera_data"
-    TANGENT = "tangent"
-    TEX_COORD = "texture_coordinate"
-    GEOMETRY = "geometry"
-    OBJECT_INFO = "object_info"
-    RGB = "rgb"
-    VALUE = "value"
-    WIREFRAME = "wireframe"
     # Vector
     BUMP = "bump"
     DISPLACEMENT = "displacement"
@@ -136,8 +136,22 @@ def get_type_by_idname_dict():
     output["ShaderNodeSeparateXYZ"] = NodeType.SEPARATE_XYZ
     output["ShaderNodeVectorMath"] = NodeType.VECTOR_MATH
     output["ShaderNodeWavelength"] = NodeType.WAVELENGTH
-
+    # Input
     output["ShaderNodeAmbientOcclusion"] = NodeType.AMBIENT_OCCLUSION
+    output["ShaderNodeBevel"] = NodeType.BEVEL
+    output["ShaderNodeCameraData"] = NodeType.CAMERA_DATA
+    output["ShaderNodeFresnel"] = NodeType.FRESNEL
+    output["ShaderNodeNewGeometry"] = NodeType.GEOMETRY
+    output["ShaderNodeLayerWeight"] = NodeType.LAYER_WEIGHT
+    output["ShaderNodeLightPath"] = NodeType.LIGHT_PATH
+    output["ShaderNodeObjectInfo"] = NodeType.OBJECT_INFO
+    output["ShaderNodeRGB"] = NodeType.RGB
+    output["ShaderNodeTangent"] = NodeType.TANGENT
+    output["ShaderNodeTexCoord"] = NodeType.TEX_COORD
+    output["ShaderNodeValue"] = NodeType.VALUE
+    output["ShaderNodeWireframe"] = NodeType.WIREFRAME
+    # Shader
+
     output["ShaderNodeBsdfPrincipled"] = NodeType.PRINCIPLED_BSDF
     output["ShaderNodeMixShader"] = NodeType.MIX_SHADER
     output["ShaderNodeAddShader"] = NodeType.ADD_SHADER
@@ -164,18 +178,6 @@ def get_type_by_idname_dict():
     output["ShaderNodeTexNoise"] = NodeType.NOISE_TEX
     output["ShaderNodeTexVoronoi"] = NodeType.VORONOI_TEX
     output["ShaderNodeTexWave"] = NodeType.WAVE_TEX
-    output["ShaderNodeBevel"] = NodeType.BEVEL
-    output["ShaderNodeLightPath"] = NodeType.LIGHT_PATH
-    output["ShaderNodeFresnel"] = NodeType.FRESNEL
-    output["ShaderNodeLayerWeight"] = NodeType.LAYER_WEIGHT
-    output["ShaderNodeCameraData"] = NodeType.CAMERA_DATA
-    output["ShaderNodeTangent"] = NodeType.TANGENT
-    output["ShaderNodeTexCoord"] = NodeType.TEX_COORD
-    output["ShaderNodeNewGeometry"] = NodeType.GEOMETRY
-    output["ShaderNodeObjectInfo"] = NodeType.OBJECT_INFO
-    output["ShaderNodeRGB"] = NodeType.RGB
-    output["ShaderNodeValue"] = NodeType.VALUE
-    output["ShaderNodeWireframe"] = NodeType.WIREFRAME
     output["ShaderNodeBump"] = NodeType.BUMP
     output["ShaderNodeDisplacement"] = NodeType.DISPLACEMENT
     output["ShaderNodeNormalMap"] = NodeType.NORMAL_MAP
@@ -392,10 +394,44 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         output.string_values['type'] = str(node.operation).lower()
     elif output.node_type == NodeType.WAVELENGTH:
         copy_sockets["Wavelength"] = "wavelength"
-    # Unsorted
+    # Input
     elif output.node_type == NodeType.AMBIENT_OCCLUSION:
         copy_sockets["Color"] = "color"
         copy_sockets["Distance"] = "distance"
+        #
+        output.int_values["samples"] = node.samples
+        output.int_values["inside"] = int(node.inside)
+        output.int_values["only_local"] = int(node.only_local)
+    elif output.node_type == NodeType.BEVEL:
+        copy_sockets["Radius"] = "radius"
+        #
+        output.int_values['samples'] = node.samples
+    elif output.node_type == NodeType.FRESNEL:
+        copy_sockets["IOR"] = "IOR"
+    elif output.node_type == NodeType.LAYER_WEIGHT:
+        copy_sockets["Blend"] = "blend"
+    elif output.node_type == NodeType.RGB:
+        #
+        value = node.outputs[0].default_value
+        output.float4_values['value'] = (value[0], value[1], value[2], value[3])
+    elif output.node_type == NodeType.TANGENT:
+        #
+        output.string_values['direction'] = str(node.direction_type).lower()
+        output.string_values['axis'] = str(node.axis).lower()
+    elif output.node_type == NodeType.VALUE:
+        #
+        output.float_values['value'] = node.outputs[0].default_value
+    elif output.node_type == NodeType.WIREFRAME:
+        copy_sockets["Size"] = "size"
+        #
+        if node.use_pixel_size:
+            output.int_values['use_pixel_size'] = 1
+        else:
+            output.int_values['use_pixel_size'] = 0
+    # Shader
+    # Texture
+    # Vector
+    # Unsorted
     elif output.node_type == NodeType.MIX_SHADER:
         copy_sockets["Fac"] = "fac"
     elif output.node_type == NodeType.PRINCIPLED_BSDF:
@@ -503,14 +539,6 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         copy_sockets["Distortion"] = "distortion"
         copy_sockets["Detail"] = "detail"
         copy_sockets["Detail Scale"] = "detail_scale"
-    elif output.node_type == NodeType.BEVEL:
-        copy_sockets["Radius"] = "radius"
-    elif output.node_type == NodeType.FRESNEL:
-        copy_sockets["IOR"] = "IOR"
-    elif output.node_type == NodeType.LAYER_WEIGHT:
-        copy_sockets["Blend"] = "blend"
-    elif output.node_type == NodeType.WIREFRAME:
-        copy_sockets["Size"] = "size"
     elif output.node_type == NodeType.BUMP:
         copy_sockets["Strength"] = "strength"
         copy_sockets["Distance"] = "distance"
@@ -544,16 +572,6 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
     # Copy any non-standard node inputs like enums, bools and strings
     if False:
         pass
-    elif isinstance(node, bpy.types.ShaderNodeAmbientOcclusion):
-        output.int_values["samples"] = node.samples
-        if node.inside:
-            output.int_values["inside"] = 1
-        else:
-            output.int_values["inside"] = 0
-        if node.only_local:
-            output.int_values["only_local"] = 1
-        else:
-            output.int_values["only_local"] = 0
     elif isinstance(node, bpy.types.ShaderNodeBsdfGlossy):
         if node.distribution == 'MULTI_GGX':
             output.string_values['distribution'] = 'multiscatter_ggx'
@@ -608,21 +626,6 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
             output.string_values['profile'] = "sine"
         else:
             output.string_values['profile'] = str(node.wave_profile).lower()
-    elif isinstance(node, bpy.types.ShaderNodeBevel):
-        output.int_values['samples'] = node.samples
-    elif isinstance(node, bpy.types.ShaderNodeTangent):
-        output.string_values['direction'] = str(node.direction_type).lower()
-        output.string_values['axis'] = str(node.axis).lower()
-    elif isinstance(node, bpy.types.ShaderNodeRGB):
-        value = node.outputs[0].default_value
-        output.float4_values['value'] = (value[0], value[1], value[2], value[3])
-    elif isinstance(node, bpy.types.ShaderNodeValue):
-        output.float_values['value'] = node.outputs[0].default_value
-    elif isinstance(node, bpy.types.ShaderNodeWireframe):
-        if node.use_pixel_size:
-            output.int_values['use_pixel_size'] = 1
-        else:
-            output.int_values['use_pixel_size'] = 0
     elif isinstance(node, bpy.types.ShaderNodeDisplacement):
         output.string_values['space'] = str(node.space).lower()
     elif isinstance(node, bpy.types.ShaderNodeNormalMap):
@@ -636,9 +639,7 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         output.string_values['type'] = str(node.vector_type).lower()
         output.string_values['convert_from'] = str(node.convert_from).lower()
         output.string_values['convert_to'] = str(node.convert_to).lower()
-
     return output
-
 
 class CyclesConnection:
     def __init__(self):
