@@ -437,10 +437,7 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         copy_sockets["Anisotropy"] = "anisotropy"
         copy_sockets["Rotation"] = "rotation"
         #
-        if node.distribution == 'MULTI_GGX':
-            output.string_values['distribution'] = 'multiscatter_ggx'
-        else:
-            output.string_values['distribution'] = str(node.distribution).lower()
+        output.string_values['distribution'] = str(node.distribution).lower()
     elif output.node_type == NodeType.DIFFUSE_BSDF:
         copy_sockets["Color"] = "color"
         copy_sockets["Roughness"] = "roughness"
@@ -452,18 +449,12 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         copy_sockets["Roughness"] = "roughness"
         copy_sockets["IOR"] = "IOR"
         #
-        if node.distribution == 'MULTI_GGX':
-            output.string_values['distribution'] = 'multiscatter_ggx'
-        else:
-            output.string_values['distribution'] = str(node.distribution).lower()
+        output.string_values['distribution'] = str(node.distribution).lower()
     elif output.node_type == NodeType.GLOSSY_BSDF:
         copy_sockets["Color"] = "color"
         copy_sockets["Roughness"] = "roughness"
         #
-        if node.distribution == 'MULTI_GGX':
-            output.string_values['distribution'] = 'multiscatter_ggx'
-        else:
-            output.string_values['distribution'] = str(node.distribution).lower()
+        output.string_values['distribution'] = str(node.distribution).lower()
     elif output.node_type == NodeType.HAIR_BSDF:
         copy_sockets["Color"] = "color"
         copy_sockets["Offset"] = "offset"
@@ -493,10 +484,7 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         copy_sockets["Emission"] = "emission"
         copy_sockets["Alpha"] = "alpha"
         #
-        if node.distribution == 'MULTI_GGX':
-            output.string_values['distribution'] = 'multiscatter_ggx'
-        else:
-            output.string_values['distribution'] = str(node.distribution).lower()
+        output.string_values['distribution'] = str(node.distribution).lower()
         output.string_values['subsurface_method'] = str(node.subsurface_method).lower()
     elif output.node_type == NodeType.PRINCIPLED_HAIR:
         copy_sockets["Color"] = "color"
