@@ -74,23 +74,24 @@ class NodeType(Enum):
     VALUE = "value"
     WIREFRAME = "wireframe"
     # Shader
-    # Untested
-    PRINCIPLED_BSDF = "principled_bsdf"
-    MIX_SHADER = "mix_shader"
     ADD_SHADER = "add_shader"
+    ANISOTROPIC_BSDF = "anisotropic_bsdf"
     DIFFUSE_BSDF = "diffuse_bsdf"
+    EMISSION = "emission"
+    GLASS_BSDF = "glass_bsdf"
     GLOSSY_BSDF = "glossy_bsdf"
+    HAIR_BSDF = "hair_bsdf"
+    HOLDOUT = "holdout"
+    MIX_SHADER = "mix_shader"
+    PRINCIPLED_BSDF = "principled_bsdf"
+    PRINCIPLED_HAIR = "principled_hair"
+    # Untested
     TRANSPARENT_BSDF = "transparent_bsdf"
     REFRACTION_BSDF = "refraction_bsdf"
-    GLASS_BSDF = "glass_bsdf"
     TRANSLUCENT_BSDF = "translucent_bsdf"
-    ANISOTROPIC_BSDF = "anisotropic_bsdf"
     VELVET_BSDF = "velvet_bsdf"
     TOON_BSDF = "toon_bsdf"
     SUBSURFACE_SCATTER = "subsurface_scatter"
-    EMISSION = "emission"
-    HAIR_BSDF = "hair_bsdf"
-    HOLDOUT = "holdout"
     VOL_ABSORB = "vol_absorb"
     VOL_SCATTER = "vol_scatter"
     # Texture
@@ -151,23 +152,24 @@ def get_type_by_idname_dict():
     output["ShaderNodeValue"] = NodeType.VALUE
     output["ShaderNodeWireframe"] = NodeType.WIREFRAME
     # Shader
-
-    output["ShaderNodeBsdfPrincipled"] = NodeType.PRINCIPLED_BSDF
-    output["ShaderNodeMixShader"] = NodeType.MIX_SHADER
     output["ShaderNodeAddShader"] = NodeType.ADD_SHADER
+    output["ShaderNodeBsdfAnisotropic"] = NodeType.ANISOTROPIC_BSDF
     output["ShaderNodeBsdfDiffuse"] = NodeType.DIFFUSE_BSDF
+    output["ShaderNodeEmission"] = NodeType.EMISSION
+    output["ShaderNodeBsdfGlass"] = NodeType.GLASS_BSDF
     output["ShaderNodeBsdfGlossy"] = NodeType.GLOSSY_BSDF
+    output["ShaderNodeBsdfHair"] = NodeType.HAIR_BSDF
+    output["ShaderNodeHoldout"] = NodeType.HOLDOUT
+    output["ShaderNodeMixShader"] = NodeType.MIX_SHADER
+    output["ShaderNodeBsdfPrincipled"] = NodeType.PRINCIPLED_BSDF
+    output["ShaderNodeBsdfHairPrincipled"] = NodeType.PRINCIPLED_HAIR
+
     output["ShaderNodeBsdfTransparent"] = NodeType.TRANSPARENT_BSDF
     output["ShaderNodeBsdfRefraction"] = NodeType.REFRACTION_BSDF
-    output["ShaderNodeBsdfGlass"] = NodeType.GLASS_BSDF
     output["ShaderNodeBsdfTranslucent"] = NodeType.TRANSLUCENT_BSDF
-    output["ShaderNodeBsdfAnisotropic"] = NodeType.ANISOTROPIC_BSDF
     output["ShaderNodeBsdfVelvet"] = NodeType.VELVET_BSDF
     output["ShaderNodeBsdfToon"] = NodeType.TOON_BSDF
     output["ShaderNodeSubsurfaceScattering"] = NodeType.SUBSURFACE_SCATTER
-    output["ShaderNodeEmission"] = NodeType.EMISSION
-    output["ShaderNodeBsdfHair"] = NodeType.HAIR_BSDF
-    output["ShaderNodeHoldout"] = NodeType.HOLDOUT
     output["ShaderNodeVolumeAbsorption"] = NodeType.VOL_ABSORB
     output["ShaderNodeVolumeScatter"] = NodeType.VOL_SCATTER
     output["ShaderNodeTexBrick"] = NodeType.BRICK_TEX
@@ -429,9 +431,46 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         else:
             output.int_values['use_pixel_size'] = 0
     # Shader
-    # Texture
-    # Vector
-    # Unsorted
+    elif output.node_type == NodeType.ANISOTROPIC_BSDF:
+        copy_sockets["Color"] = "color"
+        copy_sockets["Roughness"] = "roughness"
+        copy_sockets["Anisotropy"] = "anisotropy"
+        copy_sockets["Rotation"] = "rotation"
+        #
+        if node.distribution == 'MULTI_GGX':
+            output.string_values['distribution'] = 'multiscatter_ggx'
+        else:
+            output.string_values['distribution'] = str(node.distribution).lower()
+    elif output.node_type == NodeType.DIFFUSE_BSDF:
+        copy_sockets["Color"] = "color"
+        copy_sockets["Roughness"] = "roughness"
+    elif output.node_type == NodeType.EMISSION:
+        copy_sockets["Color"] = "color"
+        copy_sockets["Strength"] = "strength"
+    elif output.node_type == NodeType.GLASS_BSDF:
+        copy_sockets["Color"] = "color"
+        copy_sockets["Roughness"] = "roughness"
+        copy_sockets["IOR"] = "IOR"
+        #
+        if node.distribution == 'MULTI_GGX':
+            output.string_values['distribution'] = 'multiscatter_ggx'
+        else:
+            output.string_values['distribution'] = str(node.distribution).lower()
+    elif output.node_type == NodeType.GLOSSY_BSDF:
+        copy_sockets["Color"] = "color"
+        copy_sockets["Roughness"] = "roughness"
+        #
+        if node.distribution == 'MULTI_GGX':
+            output.string_values['distribution'] = 'multiscatter_ggx'
+        else:
+            output.string_values['distribution'] = str(node.distribution).lower()
+    elif output.node_type == NodeType.HAIR_BSDF:
+        copy_sockets["Color"] = "color"
+        copy_sockets["Offset"] = "offset"
+        copy_sockets["RoughnessU"] = "roughness_u"
+        copy_sockets["RoughnessV"] = "roughness_v"
+        #
+        output.string_values['component'] = str(node.component).lower()
     elif output.node_type == NodeType.MIX_SHADER:
         copy_sockets["Fac"] = "fac"
     elif output.node_type == NodeType.PRINCIPLED_BSDF:
@@ -451,29 +490,40 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         copy_sockets["Clearcoat Roughness"] = "clearcoat_roughness"
         copy_sockets["IOR"] = "ior"
         copy_sockets["Transmission"] = "transmission"
-    elif output.node_type == NodeType.DIFFUSE_BSDF:
+        copy_sockets["Emission"] = "emission"
+        copy_sockets["Alpha"] = "alpha"
+        #
+        if node.distribution == 'MULTI_GGX':
+            output.string_values['distribution'] = 'multiscatter_ggx'
+        else:
+            output.string_values['distribution'] = str(node.distribution).lower()
+        output.string_values['subsurface_method'] = str(node.subsurface_method).lower()
+    elif output.node_type == NodeType.PRINCIPLED_HAIR:
         copy_sockets["Color"] = "color"
+        copy_sockets["Melanin"] = "melanin"
+        copy_sockets["Melanin Redness"] = "melanin_redness"
+        copy_sockets["Tint"] = "tint"
+        copy_sockets["Absorption Coefficient"] = "absorption_coefficient"
         copy_sockets["Roughness"] = "roughness"
-    elif output.node_type == NodeType.GLOSSY_BSDF:
-        copy_sockets["Color"] = "color"
-        copy_sockets["Roughness"] = "roughness"
+        copy_sockets["Radial Roughness"] = "radial_roughness"
+        copy_sockets["Coat"] = "coat"
+        copy_sockets["IOR"] = "ior"
+        copy_sockets["Random Roughness"] = "random_roughness"
+        copy_sockets["Random Color"] = "random_color"
+        copy_sockets["Random"] = "random"
+        #
+        output.string_values['coloring'] = str(node.parametrization).lower()
+    # Texture
+    # Vector
+    # Unsorted
     elif output.node_type == NodeType.TRANSPARENT_BSDF:
         copy_sockets["Color"] = "color"
     elif output.node_type == NodeType.REFRACTION_BSDF:
         copy_sockets["Color"] = "color"
         copy_sockets["Roughness"] = "roughness"
         copy_sockets["IOR"] = "IOR"
-    elif output.node_type == NodeType.GLASS_BSDF:
-        copy_sockets["Color"] = "color"
-        copy_sockets["Roughness"] = "roughness"
-        copy_sockets["IOR"] = "IOR"
     elif output.node_type == NodeType.TRANSLUCENT_BSDF:
         copy_sockets["Color"] = "color"
-    elif output.node_type == NodeType.ANISOTROPIC_BSDF:
-        copy_sockets["Color"] = "color"
-        copy_sockets["Roughness"] = "roughness"
-        copy_sockets["Anisotropy"] = "anisotropy"
-        copy_sockets["Rotation"] = "rotation"
     elif output.node_type == NodeType.VELVET_BSDF:
         copy_sockets["Color"] = "color"
         copy_sockets["Sigma"] = "sigma"
@@ -486,14 +536,6 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         copy_sockets["Scale"] = "scale"
         copy_sockets["Radius"] = "radius"
         copy_sockets["Texture Blur"] = "texture_blur"
-    elif output.node_type == NodeType.EMISSION:
-        copy_sockets["Color"] = "color"
-        copy_sockets["Strength"] = "strength"
-    elif output.node_type == NodeType.HAIR_BSDF:
-        copy_sockets["Color"] = "color"
-        copy_sockets["Offset"] = "offset"
-        copy_sockets["RoughnessU"] = "roughness_U"
-        copy_sockets["RoughnessV"] = "roughness_v"
     elif output.node_type == NodeType.VOL_ABSORB:
         copy_sockets["Color"] = "color"
         copy_sockets["Density"] = "density"
@@ -572,29 +614,12 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
     # Copy any non-standard node inputs like enums, bools and strings
     if False:
         pass
-    elif isinstance(node, bpy.types.ShaderNodeBsdfGlossy):
-        if node.distribution == 'MULTI_GGX':
-            output.string_values['distribution'] = 'multiscatter_ggx'
-        else:
-            output.string_values['distribution'] = str(node.distribution).lower()
     elif isinstance(node, bpy.types.ShaderNodeBsdfRefraction):
         output.string_values['distribution'] = str(node.distribution).lower()
-    elif isinstance(node, bpy.types.ShaderNodeBsdfGlass):
-        if node.distribution == 'MULTI_GGX':
-            output.string_values['distribution'] = 'multiscatter_ggx'
-        else:
-            output.string_values['distribution'] = str(node.distribution).lower()
-    elif isinstance(node, bpy.types.ShaderNodeBsdfAnisotropic):
-        if node.distribution == 'MULTI_GGX':
-            output.string_values['distribution'] = 'multiscatter_ggx'
-        else:
-            output.string_values['distribution'] = str(node.distribution).lower()
     elif isinstance(node, bpy.types.ShaderNodeBsdfToon):
         output.string_values['component'] = str(node.component).lower()
     elif isinstance(node, bpy.types.ShaderNodeSubsurfaceScattering):
         output.string_values['falloff'] = str(node.falloff).lower()
-    elif isinstance(node, bpy.types.ShaderNodeBsdfHair):
-        output.string_values['component'] = str(node.component).lower()
     elif isinstance(node, bpy.types.ShaderNodeTexBrick):
         output.float_values['offset'] = node.offset
         output.int_values['offset_frequency'] = node.offset_frequency
