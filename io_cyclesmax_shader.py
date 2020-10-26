@@ -85,7 +85,9 @@ class NodeType(Enum):
     MIX_SHADER = "mix_shader"
     PRINCIPLED_BSDF = "principled_bsdf"
     PRINCIPLED_HAIR = "principled_hair"
+    PRINCIPLED_VOLUME = "principled_volume"
     # Untested
+
     TRANSPARENT_BSDF = "transparent_bsdf"
     REFRACTION_BSDF = "refraction_bsdf"
     TRANSLUCENT_BSDF = "translucent_bsdf"
@@ -163,6 +165,7 @@ def get_type_by_idname_dict():
     output["ShaderNodeMixShader"] = NodeType.MIX_SHADER
     output["ShaderNodeBsdfPrincipled"] = NodeType.PRINCIPLED_BSDF
     output["ShaderNodeBsdfHairPrincipled"] = NodeType.PRINCIPLED_HAIR
+    output["ShaderNodeVolumePrincipled"] = NodeType.PRINCIPLED_VOLUME
 
     output["ShaderNodeBsdfTransparent"] = NodeType.TRANSPARENT_BSDF
     output["ShaderNodeBsdfRefraction"] = NodeType.REFRACTION_BSDF
@@ -501,6 +504,16 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         copy_sockets["Random"] = "random"
         #
         output.string_values['coloring'] = str(node.parametrization).lower()
+    elif output.node_type == NodeType.PRINCIPLED_VOLUME:
+        copy_sockets["Color"] = "color"
+        copy_sockets["Density"] = "density"
+        copy_sockets["Anisotropy"] = "anisotropy"
+        copy_sockets["Absorption Color"] = "absorption_color"
+        copy_sockets["Emission Strength"] = "emission_strength"
+        copy_sockets["Emission Color"] = "emission_color"
+        copy_sockets["Blackbody Intensity"] = "blackbody_intensity"
+        copy_sockets["Blackbody Tint"] = "blackbody_tint"
+        copy_sockets["Temperature"] = "temperature"
     # Texture
     # Vector
     # Unsorted
