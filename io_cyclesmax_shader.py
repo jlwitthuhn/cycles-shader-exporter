@@ -86,17 +86,16 @@ class NodeType(Enum):
     PRINCIPLED_BSDF = "principled_bsdf"
     PRINCIPLED_HAIR = "principled_hair"
     PRINCIPLED_VOLUME = "principled_volume"
-    # Untested
-
-    TRANSPARENT_BSDF = "transparent_bsdf"
     REFRACTION_BSDF = "refraction_bsdf"
-    TRANSLUCENT_BSDF = "translucent_bsdf"
-    VELVET_BSDF = "velvet_bsdf"
-    TOON_BSDF = "toon_bsdf"
     SUBSURFACE_SCATTER = "subsurface_scatter"
+    TOON_BSDF = "toon_bsdf"
+    TRANSLUCENT_BSDF = "translucent_bsdf"
+    TRANSPARENT_BSDF = "transparent_bsdf"
+    VELVET_BSDF = "velvet_bsdf"
     VOL_ABSORB = "vol_absorb"
     VOL_SCATTER = "vol_scatter"
     # Texture
+    # Untested
     MAX_TEX = "max_tex"
     BRICK_TEX = "brick_tex"
     CHECKER_TEX = "checker_tex"
@@ -166,15 +165,15 @@ def get_type_by_idname_dict():
     output["ShaderNodeBsdfPrincipled"] = NodeType.PRINCIPLED_BSDF
     output["ShaderNodeBsdfHairPrincipled"] = NodeType.PRINCIPLED_HAIR
     output["ShaderNodeVolumePrincipled"] = NodeType.PRINCIPLED_VOLUME
-
-    output["ShaderNodeBsdfTransparent"] = NodeType.TRANSPARENT_BSDF
     output["ShaderNodeBsdfRefraction"] = NodeType.REFRACTION_BSDF
-    output["ShaderNodeBsdfTranslucent"] = NodeType.TRANSLUCENT_BSDF
-    output["ShaderNodeBsdfVelvet"] = NodeType.VELVET_BSDF
-    output["ShaderNodeBsdfToon"] = NodeType.TOON_BSDF
     output["ShaderNodeSubsurfaceScattering"] = NodeType.SUBSURFACE_SCATTER
+    output["ShaderNodeBsdfToon"] = NodeType.TOON_BSDF
+    output["ShaderNodeBsdfTranslucent"] = NodeType.TRANSLUCENT_BSDF
+    output["ShaderNodeBsdfTransparent"] = NodeType.TRANSPARENT_BSDF
+    output["ShaderNodeBsdfVelvet"] = NodeType.VELVET_BSDF
     output["ShaderNodeVolumeAbsorption"] = NodeType.VOL_ABSORB
     output["ShaderNodeVolumeScatter"] = NodeType.VOL_SCATTER
+
     output["ShaderNodeTexBrick"] = NodeType.BRICK_TEX
     output["ShaderNodeTexChecker"] = NodeType.CHECKER_TEX
     output["ShaderNodeTexGradient"] = NodeType.GRADIENT_TEX
@@ -514,29 +513,32 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         copy_sockets["Blackbody Intensity"] = "blackbody_intensity"
         copy_sockets["Blackbody Tint"] = "blackbody_tint"
         copy_sockets["Temperature"] = "temperature"
-    # Texture
-    # Vector
-    # Unsorted
-    elif output.node_type == NodeType.TRANSPARENT_BSDF:
-        copy_sockets["Color"] = "color"
     elif output.node_type == NodeType.REFRACTION_BSDF:
         copy_sockets["Color"] = "color"
         copy_sockets["Roughness"] = "roughness"
         copy_sockets["IOR"] = "IOR"
-    elif output.node_type == NodeType.TRANSLUCENT_BSDF:
-        copy_sockets["Color"] = "color"
-    elif output.node_type == NodeType.VELVET_BSDF:
-        copy_sockets["Color"] = "color"
-        copy_sockets["Sigma"] = "sigma"
-    elif output.node_type == NodeType.TOON_BSDF:
-        copy_sockets["Color"] = "color"
-        copy_sockets["Size"] = "size"
-        copy_sockets["Smooth"] = "smooth"
+        #
+        output.string_values['distribution'] = str(node.distribution).lower()
     elif output.node_type == NodeType.SUBSURFACE_SCATTER:
         copy_sockets["Color"] = "color"
         copy_sockets["Scale"] = "scale"
         copy_sockets["Radius"] = "radius"
         copy_sockets["Texture Blur"] = "texture_blur"
+        #
+        output.string_values['falloff'] = str(node.falloff).lower()
+    elif output.node_type == NodeType.TOON_BSDF:
+        copy_sockets["Color"] = "color"
+        copy_sockets["Size"] = "size"
+        copy_sockets["Smooth"] = "smooth"
+        #
+        output.string_values['component'] = str(node.component).lower()
+    elif output.node_type == NodeType.TRANSLUCENT_BSDF:
+        copy_sockets["Color"] = "color"
+    elif output.node_type == NodeType.TRANSPARENT_BSDF:
+        copy_sockets["Color"] = "color"
+    elif output.node_type == NodeType.VELVET_BSDF:
+        copy_sockets["Color"] = "color"
+        copy_sockets["Sigma"] = "sigma"
     elif output.node_type == NodeType.VOL_ABSORB:
         copy_sockets["Color"] = "color"
         copy_sockets["Density"] = "density"
@@ -544,6 +546,9 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         copy_sockets["Color"] = "color"
         copy_sockets["Density"] = "density"
         copy_sockets["Anisotropy"] = "anisotropy"
+    # Texture
+    # Vector
+    # Unsorted
     elif output.node_type == NodeType.BRICK_TEX:
         copy_sockets["Color1"] = "color1"
         copy_sockets["Color2"] = "color2"
@@ -615,12 +620,6 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
     # Copy any non-standard node inputs like enums, bools and strings
     if False:
         pass
-    elif isinstance(node, bpy.types.ShaderNodeBsdfRefraction):
-        output.string_values['distribution'] = str(node.distribution).lower()
-    elif isinstance(node, bpy.types.ShaderNodeBsdfToon):
-        output.string_values['component'] = str(node.component).lower()
-    elif isinstance(node, bpy.types.ShaderNodeSubsurfaceScattering):
-        output.string_values['falloff'] = str(node.falloff).lower()
     elif isinstance(node, bpy.types.ShaderNodeTexBrick):
         output.float_values['offset'] = node.offset
         output.int_values['offset_frequency'] = node.offset_frequency
