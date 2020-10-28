@@ -95,7 +95,6 @@ class NodeType(Enum):
     VOL_ABSORB = "vol_absorb"
     VOL_SCATTER = "vol_scatter"
     # Texture
-    # Untested
     MAX_TEX = "max_tex"
     BRICK_TEX = "brick_tex"
     CHECKER_TEX = "checker_tex"
@@ -105,6 +104,7 @@ class NodeType(Enum):
     NOISE_TEX = "noise_tex"
     VORONOI_TEX = "voronoi_tex"
     WAVE_TEX = "wave_tex"
+    # Untested
     # Vector
     BUMP = "bump"
     DISPLACEMENT = "displacement"
@@ -173,7 +173,7 @@ def get_type_by_idname_dict():
     output["ShaderNodeBsdfVelvet"] = NodeType.VELVET_BSDF
     output["ShaderNodeVolumeAbsorption"] = NodeType.VOL_ABSORB
     output["ShaderNodeVolumeScatter"] = NodeType.VOL_SCATTER
-
+    # Texture
     output["ShaderNodeTexBrick"] = NodeType.BRICK_TEX
     output["ShaderNodeTexChecker"] = NodeType.CHECKER_TEX
     output["ShaderNodeTexGradient"] = NodeType.GRADIENT_TEX
@@ -182,6 +182,7 @@ def get_type_by_idname_dict():
     output["ShaderNodeTexNoise"] = NodeType.NOISE_TEX
     output["ShaderNodeTexVoronoi"] = NodeType.VORONOI_TEX
     output["ShaderNodeTexWave"] = NodeType.WAVE_TEX
+
     output["ShaderNodeBump"] = NodeType.BUMP
     output["ShaderNodeDisplacement"] = NodeType.DISPLACEMENT
     output["ShaderNodeNormalMap"] = NodeType.NORMAL_MAP
@@ -547,8 +548,6 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         copy_sockets["Density"] = "density"
         copy_sockets["Anisotropy"] = "anisotropy"
     # Texture
-    # Vector
-    # Unsorted
     elif output.node_type == NodeType.BRICK_TEX:
         copy_sockets["Color1"] = "color1"
         copy_sockets["Color2"] = "color2"
@@ -559,34 +558,66 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         copy_sockets["Bias"] = "bias"
         copy_sockets["Brick Width"] = "brick_width"
         copy_sockets["Row Height"] = "row_height"
+        #
+        output.float_values['offset'] = node.offset
+        output.int_values['offset_frequency'] = node.offset_frequency
+        output.float_values['squash'] = node.squash
+        output.int_values['squash_frequency'] = node.squash_frequency
     elif output.node_type == NodeType.CHECKER_TEX:
         copy_sockets["Color1"] = "color1"
         copy_sockets["Color2"] = "color2"
         copy_sockets["Scale"] = "scale"
+    elif output.node_type == NodeType.GRADIENT_TEX:
+        #
+        output.string_values['type'] = str(node.gradient_type).lower()
     elif output.node_type == NodeType.MAGIC_TEX:
         copy_sockets["Scale"] = "scale"
         copy_sockets["Distortion"] = "distortion"
+        #
+        output.int_values['depth'] = node.turbulence_depth 
     elif output.node_type == NodeType.MUSGRAVE_TEX:
+        copy_sockets["W"] = "w"
         copy_sockets["Scale"] = "scale"
         copy_sockets["Detail"] = "detail"
-        copy_sockets["Dimension"] = "dimension"
         copy_sockets["Lacunarity"] = "lacunarity"
         copy_sockets["Offset"] = "offset"
         copy_sockets["Gain"] = "gain"
+        #
+        output.string_values['type'] = str(node.musgrave_type).lower()
+        output.string_values['dimensions'] = str(node.musgrave_dimensions)
     elif output.node_type == NodeType.NOISE_TEX:
+        copy_sockets["W"] = "w"
         copy_sockets["Scale"] = "scale"
         copy_sockets["Detail"] = "detail"
+        copy_sockets["Roughness"] = "roughness"
         copy_sockets["Distortion"] = "distortion"
+        #
+        output.string_values['dimensions'] = str(node.noise_dimensions)
     elif output.node_type == NodeType.VORONOI_TEX:
-        copy_sockets["Scale"] = "scale"
         copy_sockets["W"] = "w"
+        copy_sockets["Scale"] = "scale"
         copy_sockets["Smoothness"] = "smoothness"
+        copy_sockets["Exponent"] = "exponent"
         copy_sockets["Randomness"] = "randomness"
+        #
+        output.string_values['dimensions'] = str(node.voronoi_dimensions)
+        output.string_values['feature'] = str(node.feature).lower()
+        output.string_values['metric'] = str(node.distance).lower()
     elif output.node_type == NodeType.WAVE_TEX:
         copy_sockets["Scale"] = "scale"
         copy_sockets["Distortion"] = "distortion"
         copy_sockets["Detail"] = "detail"
         copy_sockets["Detail Scale"] = "detail_scale"
+        copy_sockets["Detail Roughness"] = "detail_roughness"
+        copy_sockets["Phase Offset"] = "phase"
+        #
+        output.string_values['type'] = str(node.wave_type).lower()
+        output.string_values['profile'] = str(node.wave_profile).lower()
+        if (output.string_values['type'] == "bands"):
+            output.string_values['direction'] = str(node.bands_direction).lower()
+        else:
+            output.string_values['direction'] = str(node.rings_direction).lower()
+    # Vector
     elif output.node_type == NodeType.BUMP:
         copy_sockets["Strength"] = "strength"
         copy_sockets["Distance"] = "distance"
@@ -620,37 +651,6 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
     # Copy any non-standard node inputs like enums, bools and strings
     if False:
         pass
-    elif isinstance(node, bpy.types.ShaderNodeTexBrick):
-        output.float_values['offset'] = node.offset
-        output.int_values['offset_frequency'] = node.offset_frequency
-        output.float_values['squash'] = node.squash
-        output.int_values['squash_frequency'] = node.squash_frequency 
-    elif isinstance(node, bpy.types.ShaderNodeTexGradient):
-        output.string_values['type'] = str(node.gradient_type).lower()
-    elif isinstance(node, bpy.types.ShaderNodeTexMagic):
-        output.int_values['depth'] = node.turbulence_depth 
-    elif isinstance(node, bpy.types.ShaderNodeTexMusgrave):
-        if node.musgrave_type == "FBM":
-            output.string_values['type'] = "fBM"
-        else:
-            output.string_values['type'] = str(node.musgrave_type).lower()
-    elif isinstance(node, bpy.types.ShaderNodeTexVoronoi):
-        if node.voronoi_dimensions == '1D':
-            output.int_values['dimensions'] = 1
-        elif node.voronoi_dimensions == '2D':
-            output.int_values['dimensions'] = 2
-        elif node.voronoi_dimensions == '3D':
-            output.int_values['dimensions'] = 3
-        elif node.voronoi_dimensions == '4D':
-            output.int_values['dimensions'] = 4
-        output.string_values['metric'] = str(node.distance).lower()
-        output.string_values['feature'] = str(node.feature).lower()
-    elif isinstance(node, bpy.types.ShaderNodeTexWave):
-        output.string_values['type'] = str(node.wave_type).lower()
-        if node.wave_profile == "SIN":
-            output.string_values['profile'] = "sine"
-        else:
-            output.string_values['profile'] = str(node.wave_profile).lower()
     elif isinstance(node, bpy.types.ShaderNodeDisplacement):
         output.string_values['space'] = str(node.space).lower()
     elif isinstance(node, bpy.types.ShaderNodeNormalMap):
