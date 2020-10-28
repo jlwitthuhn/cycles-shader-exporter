@@ -104,7 +104,6 @@ class NodeType(Enum):
     NOISE_TEX = "noise_tex"
     VORONOI_TEX = "voronoi_tex"
     WAVE_TEX = "wave_tex"
-    # Untested
     # Vector
     BUMP = "bump"
     DISPLACEMENT = "displacement"
@@ -182,11 +181,12 @@ def get_type_by_idname_dict():
     output["ShaderNodeTexNoise"] = NodeType.NOISE_TEX
     output["ShaderNodeTexVoronoi"] = NodeType.VORONOI_TEX
     output["ShaderNodeTexWave"] = NodeType.WAVE_TEX
-
+    # Vector
     output["ShaderNodeBump"] = NodeType.BUMP
     output["ShaderNodeDisplacement"] = NodeType.DISPLACEMENT
     output["ShaderNodeNormalMap"] = NodeType.NORMAL_MAP
     output["ShaderNodeVectorTransform"] = NodeType.VECTOR_TRANSFORM
+    # Output
     output["ShaderNodeOutputMaterial"] = NodeType.MATERIAL_OUTPUT
     return output
 
@@ -621,15 +621,30 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
     elif output.node_type == NodeType.BUMP:
         copy_sockets["Strength"] = "strength"
         copy_sockets["Distance"] = "distance"
+        #
+        output.int_values['invert'] = int(node.invert)
     elif output.node_type == NodeType.DISPLACEMENT:
         copy_sockets["Height"] = "height"
         copy_sockets["Midlevel"] = "midlevel"
         copy_sockets["Scale"] = "scale"
+        #
+        output.string_values['space'] = str(node.space).lower()
     elif output.node_type == NodeType.NORMAL_MAP:
         copy_sockets["Strength"] = "strength"
         copy_sockets["Color"] = "color"
+        #
+        if node.space == 'BLENDER_OBJECT':
+            output.string_values['space'] = 'object'
+        elif node.space == 'BLENDER_WORLD':
+            output.string_values['space'] = 'world'
+        else:
+            output.string_values['space'] = str(node.space).lower()
     elif output.node_type == NodeType.VECTOR_TRANSFORM:
         copy_sockets["Vector"] = "vector"
+        #
+        output.string_values['type'] = str(node.vector_type).lower()
+        output.string_values['convert_from'] = str(node.convert_from).lower()
+        output.string_values['convert_to'] = str(node.convert_to).lower()
 
     # Copy all sockets with identifiers in copy_sockets
     for input_socket in node.inputs:
@@ -647,23 +662,6 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         else:
             pass
 
-    # TODO: Remove this block
-    # Copy any non-standard node inputs like enums, bools and strings
-    if False:
-        pass
-    elif isinstance(node, bpy.types.ShaderNodeDisplacement):
-        output.string_values['space'] = str(node.space).lower()
-    elif isinstance(node, bpy.types.ShaderNodeNormalMap):
-        if node.space == 'BLENDER_OBJECT':
-            output.string_values['space'] = 'object'
-        elif node.space == 'BLENDER_WORLD':
-            output.string_values['space'] = 'world'
-        else:
-            output.string_values['space'] = str(node.space).lower()
-    elif isinstance(node, bpy.types.ShaderNodeVectorTransform):
-        output.string_values['type'] = str(node.vector_type).lower()
-        output.string_values['convert_from'] = str(node.convert_from).lower()
-        output.string_values['convert_to'] = str(node.convert_to).lower()
     return output
 
 class CyclesConnection:
