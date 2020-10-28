@@ -107,6 +107,7 @@ class NodeType(Enum):
     # Vector
     BUMP = "bump"
     DISPLACEMENT = "displacement"
+    MAPPING = "mapping"
     NORMAL_MAP = "normal_map"
     VECTOR_TRANSFORM = "vector_transform"
     # Output
@@ -184,6 +185,7 @@ def get_type_by_idname_dict():
     # Vector
     output["ShaderNodeBump"] = NodeType.BUMP
     output["ShaderNodeDisplacement"] = NodeType.DISPLACEMENT
+    output["ShaderNodeMapping"] = NodeType.MAPPING
     output["ShaderNodeNormalMap"] = NodeType.NORMAL_MAP
     output["ShaderNodeVectorTransform"] = NodeType.VECTOR_TRANSFORM
     # Output
@@ -629,6 +631,13 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         copy_sockets["Scale"] = "scale"
         #
         output.string_values['space'] = str(node.space).lower()
+    elif output.node_type == NodeType.MAPPING:
+        copy_sockets["Vector"] = "vector"
+        copy_sockets["Location"] = "location"
+        copy_sockets["Rotation"] = "rotation"
+        copy_sockets["Scale"] = "scale"
+        #
+        output.string_values['type'] = str(node.vector_type).lower()
     elif output.node_type == NodeType.NORMAL_MAP:
         copy_sockets["Strength"] = "strength"
         copy_sockets["Color"] = "color"
