@@ -19,8 +19,8 @@
 bl_info = {
     "name": "Export for Cycles for Max shader (.shader)",
     "author": "Jeff Witthuhn",
-    "version": (0, 2, 1),
-    "blender": (2, 83, 0),
+    "version": (2021, 0, 0),
+    "blender": (2, 92, 0),
     "location": "File > Export > Cycles for Max Shader (.shader)",
     "description": "Export Cycles shaders in a format compatible with Cycles for Max",
     "category": "Import-Export",
@@ -323,7 +323,7 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         copy_sockets["Color1"] = "color1"
         copy_sockets["Color2"] = "color2"
         #
-        output.string_values['type'] = str(node.blend_type).lower()
+        output.string_values['mix_type'] = str(node.blend_type).lower()
         output.int_values['use_clamp'] = int(node.use_clamp)
     elif output.node_type == NodeType.RGB_CURVES:
         copy_sockets["Fac"] = "fac"
@@ -371,7 +371,7 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         copy_sockets["To Max"] = "to_max"
         copy_sockets["Steps"] = "steps"
         #
-        output.string_values['type'] = str(node.interpolation_type).lower()
+        output.string_values['range_type'] = str(node.interpolation_type).lower()
         output.int_values["clamp"] = int(node.clamp)
     elif output.node_type == NodeType.MATH:
         copy_sockets["Value"] = "value1"
@@ -380,7 +380,7 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         copy_sockets["Value_002"] = "value3"
         copy_sockets["Value.002"] = "value3"
         #
-        output.string_values['type'] = str(node.operation).lower()
+        output.string_values['math_type'] = str(node.operation).lower()
         output.int_values['use_clamp'] = int(node.use_clamp)
     elif output.node_type == NodeType.RGB_TO_BW:
         copy_sockets["Color"] = "color"
@@ -398,7 +398,7 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         copy_sockets["Vector_002"] = "vector3"
         copy_sockets["Vector.002"] = "vector3"
         #
-        output.string_values['type'] = str(node.operation).lower()
+        output.string_values['math_type'] = str(node.operation).lower()
     elif output.node_type == NodeType.WAVELENGTH:
         copy_sockets["Wavelength"] = "wavelength"
     # Input
@@ -487,6 +487,7 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         copy_sockets["IOR"] = "ior"
         copy_sockets["Transmission"] = "transmission"
         copy_sockets["Emission"] = "emission"
+        copy_sockets["Emission Strength"] = "emission_strength"
         copy_sockets["Alpha"] = "alpha"
         #
         output.string_values['distribution'] = str(node.distribution).lower()
@@ -571,7 +572,7 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         copy_sockets["Scale"] = "scale"
     elif output.node_type == NodeType.GRADIENT_TEX:
         #
-        output.string_values['type'] = str(node.gradient_type).lower()
+        output.string_values['gradient_type'] = str(node.gradient_type).lower()
     elif output.node_type == NodeType.MAGIC_TEX:
         copy_sockets["Scale"] = "scale"
         copy_sockets["Distortion"] = "distortion"
@@ -585,7 +586,7 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         copy_sockets["Offset"] = "offset"
         copy_sockets["Gain"] = "gain"
         #
-        output.string_values['type'] = str(node.musgrave_type).lower()
+        output.string_values['musgrave_type'] = str(node.musgrave_type).lower()
         output.string_values['dimensions'] = str(node.musgrave_dimensions)
     elif output.node_type == NodeType.NOISE_TEX:
         copy_sockets["W"] = "w"
@@ -613,9 +614,9 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         copy_sockets["Detail Roughness"] = "detail_roughness"
         copy_sockets["Phase Offset"] = "phase"
         #
-        output.string_values['type'] = str(node.wave_type).lower()
+        output.string_values['wave_type'] = str(node.wave_type).lower()
         output.string_values['profile'] = str(node.wave_profile).lower()
-        if (output.string_values['type'] == "bands"):
+        if (output.string_values['wave_type'] == "bands"):
             output.string_values['direction'] = str(node.bands_direction).lower()
         else:
             output.string_values['direction'] = str(node.rings_direction).lower()
@@ -637,7 +638,7 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
         copy_sockets["Rotation"] = "rotation"
         copy_sockets["Scale"] = "scale"
         #
-        output.string_values['type'] = str(node.vector_type).lower()
+        output.string_values['mapping_type'] = str(node.vector_type).lower()
     elif output.node_type == NodeType.NORMAL_MAP:
         copy_sockets["Strength"] = "strength"
         copy_sockets["Color"] = "color"
@@ -651,7 +652,7 @@ def get_cycles_node(type_by_idname, name, node, max_tex_manager):
     elif output.node_type == NodeType.VECTOR_TRANSFORM:
         copy_sockets["Vector"] = "vector"
         #
-        output.string_values['type'] = str(node.vector_type).lower()
+        output.string_values['transform_type'] = str(node.vector_type).lower()
         output.string_values['convert_from'] = str(node.convert_from).lower()
         output.string_values['convert_to'] = str(node.convert_to).lower()
 
