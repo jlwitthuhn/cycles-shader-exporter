@@ -20,7 +20,7 @@ bl_info = {
     "name": "Export for Cycles for Max shader (.shader)",
     "author": "Jeff Witthuhn",
     "version": (2021, 0, 0),
-    "blender": (2, 92, 0),
+    "blender": (2, 83, 0),
     "location": "File > Export > Cycles for Max Shader (.shader)",
     "description": "Export Cycles shaders in a format compatible with Cycles for Max",
     "category": "Import-Export",
